@@ -8,7 +8,7 @@ import itertools
 # Define positions and number of trials
 positions = ['L', 'LM', 'R', 'RM']
 trial_cases = ["absent", "present"]
-total_trials = 12
+total_trials = 72
 max_present_trials = math.ceil((total_trials / 3) * 2)
 max_absent_trials = math.ceil(total_trials / 3)
 present_to_trial_ration = 2
