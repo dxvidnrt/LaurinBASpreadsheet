@@ -4,9 +4,76 @@ import itertools
 
 # Define positions and number of trials
 positions = ['L', 'LM', 'R', 'RM']
+trial_cases = ["absent", "present"]
 total_trials = 72
-present_trials = total_trials * 2 // 3
-absent_trials = total_trials - present_trials
+present_to_trial_ration = 2
+
+def generate_all_lines():
+    all_lines = []
+    for trial in trial_cases:
+        for tl in positions:
+            for dl in positions:
+                all_lines.append(trial, tl, dl)
+    return random.shuffle(all_lines)
+
+
+def is_next_line_valid(next_line, prev_line=None):
+    if next_line[0] == "absent":
+        return is_next_absent_valid(next_line, prev_line)
+    elif next_line[0] == "present":
+        return is_next_present_valid(next_line, prev_line)
+    else:
+        raise ValueError(f"Trial case {next_line[0]} is incorrect.")
+
+
+def is_next_absent_valid(next_line, prev_line):
+    if prev_line is None:
+        return True
+    if prev_line[0] == "absent":
+        # absent trial was before
+        return next_line[1]!=prev_line[1] # return True id TL is not prev TL
+    else:
+        # present trial was before
+        return next_line[1]!=prev_line[1] and next_line[1]!=prev_line[2] # return True if TL is not prev TL or DL
+
+
+def is_next_present_valid(next_line, prev_line):
+    tl, dl = next_line[1], next_line[2]
+    if tl == dl:
+        return False
+    if prev_line is None:
+        return True
+    p_tl, p_dl = prev_line[1], prev_line[2]
+    if prev_line[0] == "absent":
+        # absent trial was before
+        return tl != p_tl and dl != p_tl
+    else:
+        # present trial was before
+        return tl != p_dl and tl != p_dl and dl != p_tl and dl != p_dl
+
+def generate_all_valid_lines(prev_line=None):
+    return [line for line in generate_all_lines() if is_next_line_valid(line, prev_line)]
+
+def create_dataframe(depth, prev_line=None):
+    if depth == 0:
+        return []
+    for p in generate_all_valid_lines(prev_line):
+        [p] ++ create_dataframe(depth-1, p)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def generate_all_present_pairs(prev_pair):
