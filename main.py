@@ -1,5 +1,5 @@
 import os
-
+import uuid
 import pandas as pd
 import random
 import itertools
@@ -8,9 +8,10 @@ import itertools
 positions = ['L', 'LM', 'R', 'RM']
 trial_cases = ["absent", "present"]
 total_trials = 72
-max_present_trials = (72 // 3) * 2
-max_absent_trials = 72 // 3
+max_present_trials = (total_trials // 3) * 2
+max_absent_trials = total_trials // 3
 present_to_trial_ration = 2
+folder_path = "data"
 
 def generate_all_lines():
     all_lines = []
@@ -62,47 +63,58 @@ def generate_all_valid_lines(prev_line=None):
     return [line for line in generate_all_lines() if is_next_line_valid(line, prev_line)]
 
 
+def sort_by_trial(lines, present, absent):
+    if present >= absent * present_to_trial_ration:
+        # Get absent frist
+        return sorted(lines, key=lambda x: x[0] != "absent")
+    else:
+        # Get present first
+        return sorted(lines, key=lambda x: x[0] != "present")
+
+
 def create_dataframe(depth, prev_line=None, present_trials=0, absent_trials=0, sequence=None):
-    print(depth)
+    print(f"Depth: {depth}")
+    if absent_trials != 0:
+        print(f"Present to Absent nominated: {present_trials / (absent_trials * present_to_trial_ration)}")
     if sequence is None:
         sequence = []
 
     if depth == 0:
         # If depth is 0, construct the DataFrame and return it
         df = pd.DataFrame(sequence, columns=['Trial', 'TL', 'DL'])
-        df.to_csv("data.csv", index=False)
-        return df
+        file_name = f"data_{uuid.uuid4()}"
+        file_path = os.path.join(folder_path, file_name)
+        df.to_csv(file_path, index=False)
+        return
 
     if present_trials >= max_present_trials or absent_trials >= max_absent_trials:
-        return None
+        return
 
-    results = []
-    for p in generate_all_valid_lines(prev_line):
+    for p in sort_by_trial(generate_all_valid_lines(prev_line), present_trials, absent_trials):
         if p[0] == "absent":
             absent_trials += 1
         elif p[0] == "present":
             present_trials += 1
         else:
             raise ValueError(f"Trial case {p[0]} is not known.")
-        sub_results = create_dataframe(depth - 1, p, present_trials, absent_trials, sequence + [p])
-        if sub_results is not None:
-            return sub_results
+        create_dataframe(depth - 1, p, present_trials, absent_trials, sequence + [p])
 
 
 if __name__ == "__main__":
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
     # Call create_dataframe with depth 3
-    result = create_dataframe(depth=72)
+    result = create_dataframe(depth=total_trials)
 
     # Convert the result to a DataFrame for better visualization
     df = pd.DataFrame(result, columns=["Trial", "TL", "DL"])
 
-    folder_path = "data"
-    file_name = "data_2.csv"
-    file_path = os.path.join(folder_path, file_name)
+
+
 
     # Check if the folder exists, if not, create it
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+
 
     # Write the DataFrame to a CSV file
     df.to_csv(file_path, index=False)
